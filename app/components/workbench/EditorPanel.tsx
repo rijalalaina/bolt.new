@@ -23,6 +23,9 @@ import { isMobile } from '~/utils/mobile';
 import { FileBreadcrumb } from './FileBreadcrumb';
 import { FileTree } from './FileTree';
 import { Terminal, type TerminalRef } from './terminal/Terminal';
+// Append start  
+import JSZip from 'jszip';  
+// Append end  
 
 interface EditorPanelProps {
   files?: FileMap;
@@ -121,7 +124,47 @@ export const EditorPanel = memo(
         setActiveTerminal(terminalCount);
       }
     };
+// Append start  
+    const handleDownloadZip = useCallback(async () => {  
+      const zip = new JSZip();  
+      const files = workbenchStore.files.get();  
 
+      // Check if there are files to download  
+      if (Object.keys(files).length === 0) {  
+        toast.error('No files to download');  
+        return;  
+      }  
+
+      try {  
+        // Add files to the ZIP, maintaining relative paths from WORK_DIR  
+        Object.entries(files).forEach(([path, content]) => {  
+          if (content && content.content) {  
+            const relativePath = path.startsWith(WORK_DIR)   
+              ? path.slice(WORK_DIR.length + 1)   
+              : path;  
+            zip.file(relativePath, content.content);  
+          }  
+        });  
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' });  
+        const downloadLink = document.createElement('a');  
+        downloadLink.href = URL.createObjectURL(zipBlob);  
+
+        // Use the project name from `package.json` if available  
+        const projectName = files[`${WORK_DIR}/package.json`]?.content  
+          ? JSON.parse(files[`${WORK_DIR}/package.json`].content).name  
+          : 'project';  
+        downloadLink.download = `${projectName}.zip`;  
+
+        downloadLink.click();  
+        URL.revokeObjectURL(downloadLink.href);  
+        toast.success('Files downloaded successfully');  
+      } catch (error) {  
+        toast.error('Failed to create zip file');  
+        console.error(error);  
+      }  
+    }, []);  
+    // Append end  
     return (
       <PanelGroup direction="vertical">
         <Panel defaultSize={showTerminal ? DEFAULT_EDITOR_SIZE : 100} minSize={20}>
@@ -131,6 +174,16 @@ export const EditorPanel = memo(
                 <PanelHeader>
                   <div className="i-ph:tree-structure-duotone shrink-0" />
                   Files
+                  {/* Append start */}  
+                  <div className="flex-1" />  
+                  <button  
+                    className="px-2 py-1 rounded-md text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive enabled:hover:bg-bolt-elements-item-backgroundActive"  
+                    onClick={handleDownloadZip}  
+                    title="Download as ZIP"  
+                  >  
+                    <div className="i-ph:download-simple text-xl" />  
+                  </button>  
+                  {/* Append end */} 
                 </PanelHeader>
                 <FileTree
                   className="h-full"
