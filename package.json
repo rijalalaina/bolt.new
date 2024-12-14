@@ -24,6 +24,10 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.39",
+    // Append start  
+    "jszip": "^3.10.1",  
+    // Append end  
+    },
     "@codemirror/autocomplete": "^6.17.0",
     "@codemirror/commands": "^6.6.0",
     "@codemirror/lang-cpp": "^6.0.2",
